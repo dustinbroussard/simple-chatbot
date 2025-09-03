@@ -47,7 +47,9 @@ const sidebar = document.getElementById('sidebar');
             systemPrompt: 'You are a helpful chatbot. Provide concise and accurate responses.',
             maxContext: 20,
             corsProxy: 'http://localhost:8000/api/chat/completions',
-            customModels: []
+            customModels: [],
+            maxTokens: 1000,
+            temperature: 0.7
         };
         let renameConversationId = null;
         let typing = false;
@@ -56,6 +58,7 @@ const sidebar = document.getElementById('sidebar');
             loadSettings();
             loadConversations();
             setupEventListeners();
+            userInput.focus();
         }
 
         function loadSettings() {
@@ -71,6 +74,8 @@ const sidebar = document.getElementById('sidebar');
             maxContextSelect.value = settings.maxContext ?? 20;
             // Set the cors proxy to the local server by default
             corsProxyInput.value = settings.corsProxy || 'http://localhost:8000/api/chat/completions';
+            maxTokensInput.value = settings.maxTokens ?? 1000;
+            temperatureInput.value = settings.temperature ?? 0.7;
             
             refreshModelSelect();
             
@@ -131,11 +136,17 @@ const sidebar = document.getElementById('sidebar');
             settings.systemPrompt = systemPromptInput.value.trim();
             settings.maxContext = parseInt(maxContextSelect.value);
             settings.corsProxy = corsProxyInput.value.trim();
+            settings.maxTokens = parseInt(maxTokensInput.value) || 1000;
+            settings.temperature = parseFloat(temperatureInput.value) || 0.7;
 
             if (!settings.apiKey) {
                 alert('API Key is required. Please enter a valid OpenRouter API key.');
                 return false;
             }
+
+            // Clamp numeric values to reasonable ranges
+            settings.maxTokens = Math.max(1, Math.min(10000, settings.maxTokens));
+            settings.temperature = Math.max(0, Math.min(2, settings.temperature));
 
             localStorage.setItem('chatbot_settings', JSON.stringify(settings));
             return true;
@@ -497,6 +508,7 @@ const sidebar = document.getElementById('sidebar');
             }
 
             userInput.value = '';
+            userInput.style.height = 'auto';
             userInput.disabled = true;
             sendBtn.disabled = true;
             clearBtn.disabled = true;
@@ -514,7 +526,8 @@ const sidebar = document.getElementById('sidebar');
                     body: JSON.stringify({
                         model: settings.model,
                         messages: conversation.context,
-                        max_tokens: 1000
+                        max_tokens: settings.maxTokens,
+                        temperature: settings.temperature
                     })
                 });
 
@@ -552,6 +565,7 @@ const sidebar = document.getElementById('sidebar');
                 userInput.disabled = false;
                 sendBtn.disabled = false;
                 clearBtn.disabled = false;
+                userInput.focus();
             }
         }
 
@@ -586,6 +600,8 @@ const sidebar = document.getElementById('sidebar');
                 setTimeout(() => {
                     button.innerHTML = '<i class="fas fa-copy"></i>';
                 }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
             });
         }
 
@@ -645,11 +661,15 @@ const sidebar = document.getElementById('sidebar');
             });
 
             sendBtn.addEventListener('click', sendMessage);
-            userInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' || e.keyCode === 13) {
+            userInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                 }
+            });
+            userInput.addEventListener('input', () => {
+                userInput.style.height = 'auto';
+                userInput.style.height = `${Math.min(userInput.scrollHeight, 150)}px`;
             });
 
             clearBtn.addEventListener('click', clearCurrentConversation);
