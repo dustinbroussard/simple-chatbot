@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ChatBot - AMOLED Black UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Conversations</div>
+            <button type="button" class="new-chat-btn" id="new-chat-btn">
+                <i class="fas fa-plus"></i> New
+            </button>
+        </div>
+        <div class="conversations-list" id="conversations-list"></div>
+        <div class="sidebar-footer">
+            <button type="button" class="settings-btn" id="open-settings">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="chat-header">
+            <h1>ChatBot</h1>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="empty-state" id="empty-state">
+                <i class="fas fa-comments empty-icon"></i>
+                <h2 class="empty-title">Welcome to ChatBot</h2>
+                <p class="empty-text">Start a new conversation or select an existing one from the sidebar.</p>
+                <button type="button" class="start-chat-btn" id="start-chat-btn">
+                    <i class="fas fa-plus"></i> New Conversation
+                </button>
+            </div>
+        </div>
+        <div class="chat-footer">
+            <div class="chat-input">
+                <textarea id="user-input" placeholder="Type your message..." rows="1" autocomplete="off"></textarea>
+                <button type="button" class="input-button" id="send-btn" aria-label="Send message">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button type="button" class="input-button" id="clear-btn" aria-label="Clear conversation">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Settings</div>
+                <button type="button" class="close-modal" id="close-settings" aria-label="Close settings">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label class="settings-label" for="api-key">OpenRouter API Key</label>
+                    <input type="password" id="api-key" class="settings-input" placeholder="Enter your API key">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="model-select">Default Model</label>
+                    <select id="model-select" class="settings-select">
+                        <option value="qwen/qwen3-235b-a22b:free">Qwen 235B A22B (Free)</option>
+                        <option value="nvidia/llama-3.1-nemotron-ultra-253b-v1:free">Nemotron Ultra 253B (Free)</option>
+                        <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek Chat v3 (Free)</option>
+                        <option value="open-r1/olympiccoder-32b:free">OlympicCoder 32B (Free)</option>
+                        <option value="qwen/qwen3-30b-a3b:free">Qwen 30B A3B (Free)</option>
+                        <optgroup label="Custom Models" id="custom-models-group"></optgroup>
+                    </select>
+                    <div class="settings-group">
+                        <label class="settings-label">Manage Custom Models</label>
+                        <div class="custom-model-input">
+                            <input type="text" id="new-custom-model" class="settings-input" placeholder="model/provider:version">
+                            <button type="button" class="modal-btn save-btn" onclick="addCustomModel()">
+                                Add
+                            </button>
+                        </div>
+                        <div id="custom-models-list" class="custom-models-list"></div>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="system-prompt">Default System Prompt</label>
+                    <textarea id="system-prompt" class="settings-input" rows="4" placeholder="You are a helpful chatbot...">You are a helpful chatbot. Provide concise and accurate responses.</textarea>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="max-context">Max Context Length</label>
+                    <select id="max-context" class="settings-select">
+                        <option value="5">5 messages</option>
+                        <option value="10">10 messages</option>
+                        <option value="15">15 messages</option>
+                        <option value="20">20 messages</option>
+                        <option value="30">30 messages</option>
+                        <option value="50">50 messages</option>
+                        <option value="0">No limit</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="max-tokens">Max Tokens</label>
+                    <input type="number" id="max-tokens" class="settings-input" min="1" max="10000" value="1000">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="temperature">Temperature</label>
+                    <input type="number" id="temperature" class="settings-input" min="0" max="2" step="0.1" value="0.7">
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="cors-proxy">CORS Proxy URL</label>
+                    <input type="text" id="cors-proxy" class="settings-input" placeholder="https://cors-proxy.example.com/">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn cancel-btn" id="cancel-settings">Cancel</button>
+                <button type="button" class="modal-btn save-btn" id="save-settings">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="rename-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Rename Conversation</div>
+                <button type="button" class="close-modal" id="close-rename" aria-label="Close rename">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label class="settings-label" for="conversation-name">Conversation Name</label>
+                    <input type="text" id="conversation-name" class="settings-input" placeholder="Enter a name">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn cancel-btn" id="cancel-rename">Cancel</button>
+                <button type="button" class="modal-btn save-btn" id="save-rename">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="export-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Export Conversation</div>
+                <button type="button" class="close-modal" id="close-export" aria-label="Close export">×</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="export-content" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn cancel-btn" id="close-export-btn">Close</button>
+                <button type="button" class="modal-btn save-btn" id="download-export">Download</button>
+                <button type="button" class="modal-btn save-btn" id="copy-export">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    
+
+
+<script src="script.js"></script></body></html>
