@@ -4,8 +4,9 @@ import requests
 import json
 import os
 
-PORT = 8000
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Allow configuration via environment variables with sensible defaults
+PORT = int(os.getenv("PORT", "8000"))
+API_URL = os.getenv("API_URL", "https://openrouter.ai/api/v1/chat/completions")
 
 class CORSProxyHandler(http.server.SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -50,8 +51,9 @@ class CORSProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(response.status_code)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Title, HTTP-Referer')
                 for header, value in response.headers.items():
-                    if header.lower() in ['content-type', 'access-control-allow-origin']:
+                    if header.lower() in ['content-type', 'access-control-allow-origin', 'access-control-allow-headers']:
                         continue
                     self.send_header(header, value)
                 self.end_headers()
@@ -76,7 +78,8 @@ class CORSProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, f'Internal Server Error: {str(e)}')
             
 if __name__ == "__main__":
-    with socketserver.TCPServer(("", PORT), CORSProxyHandler) as httpd:
+    # Use ThreadingTCPServer to handle multiple requests concurrently
+    with socketserver.ThreadingTCPServer(("", PORT), CORSProxyHandler) as httpd:
         print(f"Serving at http://localhost:{PORT}")
         print(f"CORS Proxy active for {API_URL}")
         httpd.serve_forever()
