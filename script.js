@@ -374,7 +374,8 @@ const sidebar = document.getElementById('sidebar');
             messageContent.className = 'message-content';
             if (sender === 'bot') {
                 messageContent.innerHTML = content.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, lang, code) => {
-                    const highlightedCode = Prism.highlight(code, Prism.languages[lang], lang);
+                    const grammar = Prism.languages[lang] || Prism.languages.markup;
+                    const highlightedCode = Prism.highlight(code, grammar, lang);
                     return `<div class="code-container">
                         <div class="code-toolbar">
                             <button class="code-btn" onclick="copyCode(this)">
@@ -732,9 +733,26 @@ const sidebar = document.getElementById('sidebar');
             });
 
             document.addEventListener('click', (e) => {
-                if (window.innerWidth <= 768 && sidebar.classList.contains('open') && 
+                if (window.innerWidth <= 768 && sidebar.classList.contains('open') &&
                     !sidebar.contains(e.target) && e.target !== menuToggle) {
                     sidebar.classList.remove('open');
+                }
+            });
+
+            conversationName.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    renameConversation();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    [settingsModal, renameModal, exportModal].forEach(modal => {
+                        if (modal.style.display === 'flex') {
+                            modal.style.display = 'none';
+                        }
+                    });
                 }
             });
         }

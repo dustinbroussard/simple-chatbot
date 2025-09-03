@@ -19,6 +19,11 @@ proxy is included to work around browser CORS restrictions.
    ```
 
    The application will be available at `http://localhost:8000`.
+   You can override the port or API endpoint with environment variables:
+
+   ```bash
+   PORT=9000 API_URL=https://example.com/v1/chat python run_server.py
+   ```
 
 3. Open `chat.html` in your browser and enter your OpenRouter API key in
    the **Settings** dialog.
